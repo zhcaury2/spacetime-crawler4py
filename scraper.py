@@ -1,12 +1,51 @@
 import hashlib
+import json
+import os
 import re
+import time
+from collections import Counter
+from threading import Lock
 from urllib.parse import urlparse, urljoin, urldefrag, parse_qsl
 from bs4 import BeautifulSoup
+from tokenizerPartA import _is_ascii_alnum
 
 uniquePages = 0
 longestPage = 0
 commonWords = {}
 subdomains = {}
+
+REPORT_PATH = "crawl_report.txt"
+REPORT_JSON_PATH = "crawl_report.json"
+REPORT_WRITE_INTERVAL_SECONDS = 15
+
+STOP_WORDS = {
+    "a", "about", "above", "after", "again", "against", "all", "am", "an",
+    "and", "any", "are", "aren", "as", "at", "be", "because", "been",
+    "before", "being", "below", "between", "both", "but", "by", "can",
+    "could", "couldn", "d", "did", "didn", "do", "does", "doesn", "doing",
+    "don", "down", "during", "each", "few", "for", "from", "further", "had",
+    "hadn", "has", "hasn", "have", "haven", "having", "he", "her", "here",
+    "hers", "herself", "him", "himself", "his", "how", "i", "if", "in",
+    "into", "is", "isn", "it", "its", "itself", "just", "ll", "m", "ma",
+    "me", "might", "mightn", "more", "most", "mustn", "my", "myself", "no",
+    "nor", "not", "now", "o", "of", "off", "on", "once", "only", "or",
+    "other", "our", "ours", "ourselves", "out", "over", "own", "re", "s",
+    "same", "shan", "she", "should", "shouldn", "so", "some", "such", "t",
+    "than", "that", "the", "their", "theirs", "them", "themselves", "then",
+    "there", "these", "they", "this", "those", "through", "to", "too",
+    "under", "until", "up", "ve", "very", "was", "wasn", "we", "were",
+    "weren", "what", "when", "where", "which", "while", "who", "whom", "why",
+    "will", "with", "won", "would", "wouldn", "y", "you", "your", "yours",
+    "yourself", "yourselves",
+}
+
+_analytics_lock = Lock()
+_unique_page_urls = set()
+_word_frequencies = Counter()
+_subdomain_counts = Counter()
+_longest_page_url = None
+_longest_page_words = 0
+_last_report_write = 0.0
 
 seen_content_hashes = set()
 MIN_TOKENS = 50
@@ -71,6 +110,137 @@ CALENDAR_QUERY_KEYS = {
 }
 simhash_buckets = {}
 recent_simhash_signatures = []
+
+
+def _normalize_url_for_uniqueness(raw_url):
+    clean_url, _frag = urldefrag(raw_url or "")
+    parsed = urlparse(clean_url)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return None
+    path = parsed.path or "/"
+    if path != "/" and path.endswith("/"):
+        path = path.rstrip("/")
+    parsed = parsed._replace(
+        scheme=parsed.scheme.lower(),
+        netloc=parsed.netloc.lower(),
+        path=path,
+        fragment="",
+    )
+    return parsed.geturl()
+
+
+def _write_report_locked(force=False):
+    global _last_report_write
+
+    now = time.time()
+    if not force and now - _last_report_write < REPORT_WRITE_INTERVAL_SECONDS:
+        return
+
+    sorted_words = sorted(
+        _word_frequencies.items(), key=lambda item: (-item[1], item[0])
+    )[:50]
+    sorted_subdomains = sorted(_subdomain_counts.items(), key=lambda item: item[0])
+
+    lines = [
+        f"Unique pages: {len(_unique_page_urls)}",
+        "",
+        "Longest page:",
+        f"URL: {_longest_page_url if _longest_page_url else 'N/A'}",
+        f"Word count: {_longest_page_words}",
+        "",
+        "Top 50 words (excluding stop words):",
+    ]
+    if sorted_words:
+        for index, (word, count) in enumerate(sorted_words, start=1):
+            lines.append(f"{index}. {word}: {count}")
+    else:
+        lines.append("N/A")
+
+    lines.extend(["", "Subdomains (alphabetical):"])
+    if sorted_subdomains:
+        for host, count in sorted_subdomains:
+            lines.append(f"{host}, {count}")
+    else:
+        lines.append("N/A")
+
+    payload = {
+        "unique_pages": len(_unique_page_urls),
+        "longest_page": {
+            "url": _longest_page_url,
+            "word_count": _longest_page_words,
+        },
+        "top_50_words": [{"word": word, "count": count} for word, count in sorted_words],
+        "subdomains": [{"subdomain": host, "count": count} for host, count in sorted_subdomains],
+    }
+
+    report_tmp = REPORT_PATH + ".tmp"
+    with open(report_tmp, "w", encoding="utf-8") as report_file:
+        report_file.write("\n".join(lines) + "\n")
+    os.replace(report_tmp, REPORT_PATH)
+
+    json_tmp = REPORT_JSON_PATH + ".tmp"
+    with open(json_tmp, "w", encoding="utf-8") as json_file:
+        json.dump(payload, json_file, indent=2)
+    os.replace(json_tmp, REPORT_JSON_PATH)
+    _last_report_write = now
+
+
+def _update_analytics(page_url, tokens):
+    global uniquePages, longestPage, commonWords, subdomains
+    global _longest_page_url, _longest_page_words
+
+    canonical_url = _normalize_url_for_uniqueness(page_url)
+    if not canonical_url:
+        return
+
+    parsed = urlparse(canonical_url)
+    host = (parsed.hostname or "").lower()
+    if not any(host == d or host.endswith("." + d) for d in ALLOWED_DOMAIN_SUFFIXES):
+        return
+
+    word_tokens = [tok.lower() for tok in tokens if tok.isalpha()]
+    word_count = len(word_tokens)
+    filtered_tokens = [tok for tok in word_tokens if tok not in STOP_WORDS and len(tok) > 1]
+
+    with _analytics_lock:
+        if canonical_url in _unique_page_urls:
+            return
+
+        _unique_page_urls.add(canonical_url)
+        if host.endswith(".uci.edu") or host == "uci.edu":
+            _subdomain_counts[host] += 1
+        if word_count > _longest_page_words:
+            _longest_page_words = word_count
+            _longest_page_url = canonical_url
+        if filtered_tokens:
+            _word_frequencies.update(filtered_tokens)
+
+        uniquePages = len(_unique_page_urls)
+        longestPage = _longest_page_words
+        commonWords = dict(_word_frequencies)
+        subdomains = dict(_subdomain_counts)
+
+        _write_report_locked(force=False)
+
+
+def finalize_report():
+    with _analytics_lock:
+        _write_report_locked(force=True)
+
+
+def _tokenize_text_assignment_style(text):
+    # Reuse Assignment 1 tokenizer behavior: ASCII alnum only, lowercased.
+    tokens = []
+    token_chars = []
+    for ch in text:
+        if _is_ascii_alnum(ch):
+            token_chars.append(ch.lower())
+        elif token_chars:
+            tokens.append("".join(token_chars))
+            token_chars.clear()
+    if token_chars:
+        tokens.append("".join(token_chars))
+    return tokens
 
 
 def _exact_content_signature(tokens):
@@ -247,7 +417,9 @@ def extract_next_links(url, resp):
     seen_urls = set()
     content = BeautifulSoup(content_bytes, "html.parser")
     text = content.get_text(" ", strip=True)
-    tokens = re.findall(r"[A-Za-z0-9]+", text)
+    tokens = _tokenize_text_assignment_style(text)
+    page_identity_url = getattr(resp.raw_response, "url", None) or url or resp.url
+    _update_analytics(page_identity_url, tokens)
     if len(tokens) < MIN_TOKENS:
         return []
     unique_ratio = len(set(tokens)) / float(len(tokens))

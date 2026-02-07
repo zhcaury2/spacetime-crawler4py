@@ -1,0 +1,97 @@
+Unique pages: 2306
+
+Longest page:
+URL: https://ics.uci.edu/~kay/wordlist.txt
+Word count: 475850
+
+Top 50 words (excluding stop words):
+1. ics: 10753
+2. qe: 10451
+3. data: 8992
+4. one: 8096
+5. project: 7906
+6. years: 7038
+7. added: 6710
+8. time: 6451
+9. ago: 6384
+10. course: 5990
+11. uci: 5969
+12. pdf: 5913
+13. program: 4949
+14. first: 4867
+15. kb: 4802
+16. python: 4732
+17. use: 4692
+18. work: 4563
+19. list: 4561
+20. class: 4490
+21. need: 4284
+22. lecture: 4224
+23. set: 3986
+24. file: 3984
+25. function: 3975
+26. code: 3895
+27. information: 3785
+28. mjcarey: 3767
+29. students: 3557
+30. software: 3551
+31. com: 3485
+32. us: 3485
+33. like: 3478
+34. student: 3476
+35. using: 3468
+36. make: 3429
+37. homework: 3413
+38. may: 3388
+39. name: 3378
+40. smyth: 3375
+41. edu: 3260
+42. research: 3249
+43. new: 3201
+44. way: 3130
+45. type: 3106
+46. also: 3103
+47. padhraic: 3086
+48. science: 3040
+49. learning: 2986
+50. two: 2935
+
+Subdomains (alphabetical):
+accessibility.ics.uci.edu, 6
+archive-beta.ics.uci.edu, 7
+archive.ics.uci.edu, 189
+checkin.ics.uci.edu, 2
+containers.ics.uci.edu, 1
+courselisting.ics.uci.edu, 1
+cs.ics.uci.edu, 2
+evoke.ics.uci.edu, 2
+gitlab.ics.uci.edu, 1
+gradinfo.ics.uci.edu, 1
+grape.ics.uci.edu, 287
+hack.ics.uci.edu, 2
+hai.ics.uci.edu, 6
+helpdesk.ics.uci.edu, 4
+hub.ics.uci.edu, 3
+ics.uci.edu, 1317
+insite.ics.uci.edu, 9
+intranet.ics.uci.edu, 1
+jgarcia.ics.uci.edu, 40
+julia-hub.ics.uci.edu, 1
+mailman.ics.uci.edu, 35
+mover.ics.uci.edu, 23
+myip.ics.uci.edu, 1
+netreg.ics.uci.edu, 1
+observium.ics.uci.edu, 1
+onboarding.ics.uci.edu, 1
+password.ics.uci.edu, 1
+pgadmin.ics.uci.edu, 1
+seal.ics.uci.edu, 50
+speedtest.ics.uci.edu, 1
+staging-hub.ics.uci.edu, 1
+stat.ics.uci.edu, 2
+summeracademy.ics.uci.edu, 6
+support.ics.uci.edu, 4
+svn.ics.uci.edu, 1
+wiki.ics.uci.edu, 213
+www.informatics.uci.edu, 79
+www.stat.uci.edu, 3

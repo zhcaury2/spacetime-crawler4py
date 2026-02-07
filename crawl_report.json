@@ -1,0 +1,363 @@
+{
+  "unique_pages": 2306,
+  "longest_page": {
+    "url": "https://ics.uci.edu/~kay/wordlist.txt",
+    "word_count": 475850
+  },
+  "top_50_words": [
+    {
+      "word": "ics",
+      "count": 10753
+    },
+    {
+      "word": "qe",
+      "count": 10451
+    },
+    {
+      "word": "data",
+      "count": 8992
+    },
+    {
+      "word": "one",
+      "count": 8096
+    },
+    {
+      "word": "project",
+      "count": 7906
+    },
+    {
+      "word": "years",
+      "count": 7038
+    },
+    {
+      "word": "added",
+      "count": 6710
+    },
+    {
+      "word": "time",
+      "count": 6451
+    },
+    {
+      "word": "ago",
+      "count": 6384
+    },
+    {
+      "word": "course",
+      "count": 5990
+    },
+    {
+      "word": "uci",
+      "count": 5969
+    },
+    {
+      "word": "pdf",
+      "count": 5913
+    },
+    {
+      "word": "program",
+      "count": 4949
+    },
+    {
+      "word": "first",
+      "count": 4867
+    },
+    {
+      "word": "kb",
+      "count": 4802
+    },
+    {
+      "word": "python",
+      "count": 4732
+    },
+    {
+      "word": "use",
+      "count": 4692
+    },
+    {
+      "word": "work",
+      "count": 4563
+    },
+    {
+      "word": "list",
+      "count": 4561
+    },
+    {
+      "word": "class",
+      "count": 4490
+    },
+    {
+      "word": "need",
+      "count": 4284
+    },
+    {
+      "word": "lecture",
+      "count": 4224
+    },
+    {
+      "word": "set",
+      "count": 3986
+    },
+    {
+      "word": "file",
+      "count": 3984
+    },
+    {
+      "word": "function",
+      "count": 3975
+    },
+    {
+      "word": "code",
+      "count": 3895
+    },
+    {
+      "word": "information",
+      "count": 3785
+    },
+    {
+      "word": "mjcarey",
+      "count": 3767
+    },
+    {
+      "word": "students",
+      "count": 3557
+    },
+    {
+      "word": "software",
+      "count": 3551
+    },
+    {
+      "word": "com",
+      "count": 3485
+    },
+    {
+      "word": "us",
+      "count": 3485
+    },
+    {
+      "word": "like",
+      "count": 3478
+    },
+    {
+      "word": "student",
+      "count": 3476
+    },
+    {
+      "word": "using",
+      "count": 3468
+    },
+    {
+      "word": "make",
+      "count": 3429
+    },
+    {
+      "word": "homework",
+      "count": 3413
+    },
+    {
+      "word": "may",
+      "count": 3388
+    },
+    {
+      "word": "name",
+      "count": 3378
+    },
+    {
+      "word": "smyth",
+      "count": 3375
+    },
+    {
+      "word": "edu",
+      "count": 3260
+    },
+    {
+      "word": "research",
+      "count": 3249
+    },
+    {
+      "word": "new",
+      "count": 3201
+    },
+    {
+      "word": "way",
+      "count": 3130
+    },
+    {
+      "word": "type",
+      "count": 3106
+    },
+    {
+      "word": "also",
+      "count": 3103
+    },
+    {
+      "word": "padhraic",
+      "count": 3086
+    },
+    {
+      "word": "science",
+      "count": 3040
+    },
+    {
+      "word": "learning",
+      "count": 2986
+    },
+    {
+      "word": "two",
+      "count": 2935
+    }
+  ],
+  "subdomains": [
+    {
+      "subdomain": "accessibility.ics.uci.edu",
+      "count": 6
+    },
+    {
+      "subdomain": "archive-beta.ics.uci.edu",
+      "count": 7
+    },
+    {
+      "subdomain": "archive.ics.uci.edu",
+      "count": 189
+    },
+    {
+      "subdomain": "checkin.ics.uci.edu",
+      "count": 2
+    },
+    {
+      "subdomain": "containers.ics.uci.edu",
+      "count": 1
+    },
+    {
+      "subdomain": "courselisting.ics.uci.edu",
+      "count": 1
+    },
+    {
+      "subdomain": "cs.ics.uci.edu",
+      "count": 2
+    },
+    {
+      "subdomain": "evoke.ics.uci.edu",
+      "count": 2
+    },
+    {
+      "subdomain": "gitlab.ics.uci.edu",
+      "count": 1
+    },
+    {
+      "subdomain": "gradinfo.ics.uci.edu",
+      "count": 1
+    },
+    {
+      "subdomain": "grape.ics.uci.edu",
+      "count": 287
+    },
+    {
+      "subdomain": "hack.ics.uci.edu",
+      "count": 2
+    },
+    {
+      "subdomain": "hai.ics.uci.edu",
+      "count": 6
+    },
+    {
+      "subdomain": "helpdesk.ics.uci.edu",
+      "count": 4
+    },
+    {
+      "subdomain": "hub.ics.uci.edu",
+      "count": 3
+    },
+    {
+      "subdomain": "ics.uci.edu",
+      "count": 1317
+    },
+    {
+      "subdomain": "insite.ics.uci.edu",
+      "count": 9
+    },
+    {
+      "subdomain": "intranet.ics.uci.edu",
+      "count": 1
+    },
+    {
+      "subdomain": "jgarcia.ics.uci.edu",
+      "count": 40
+    },
+    {
+      "subdomain": "julia-hub.ics.uci.edu",
+      "count": 1
+    },
+    {
+      "subdomain": "mailman.ics.uci.edu",
+      "count": 35
+    },
+    {
+      "subdomain": "mover.ics.uci.edu",
+      "count": 23
+    },
+    {
+      "subdomain": "myip.ics.uci.edu",
+      "count": 1
+    },
+    {
+      "subdomain": "netreg.ics.uci.edu",
+      "count": 1
+    },
+    {
+      "subdomain": "observium.ics.uci.edu",
+      "count": 1
+    },
+    {
+      "subdomain": "onboarding.ics.uci.edu",
+      "count": 1
+    },
+    {
+      "subdomain": "password.ics.uci.edu",
+      "count": 1
+    },
+    {
+      "subdomain": "pgadmin.ics.uci.edu",
+      "count": 1
+    },
+    {
+      "subdomain": "seal.ics.uci.edu",
+      "count": 50
+    },
+    {
+      "subdomain": "speedtest.ics.uci.edu",
+      "count": 1
+    },
+    {
+      "subdomain": "staging-hub.ics.uci.edu",
+      "count": 1
+    },
+    {
+      "subdomain": "stat.ics.uci.edu",
+      "count": 2
+    },
+    {
+      "subdomain": "summeracademy.ics.uci.edu",
+      "count": 6
+    },
+    {
+      "subdomain": "support.ics.uci.edu",
+      "count": 4
+    },
+    {
+      "subdomain": "svn.ics.uci.edu",
+      "count": 1
+    },
+    {
+      "subdomain": "wiki.ics.uci.edu",
+      "count": 213
+    },
+    {
+      "subdomain": "www.informatics.uci.edu",
+      "count": 79
+    },
+    {
+      "subdomain": "www.stat.uci.edu",
+      "count": 3
+    }
+  ]
+}
