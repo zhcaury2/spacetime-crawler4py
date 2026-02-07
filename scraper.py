@@ -1,5 +1,5 @@
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin, urldefrag, parse_qs
 from bs4 import BeautifulSoup
 
 uniquePages = 0
@@ -21,14 +21,20 @@ def extract_next_links(url, resp):
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
 
-    if resp.status != 200:
-        return list()
-    
+    if resp.status != 200 or not resp.raw_response or not resp.raw_response.content:
+        return []
+
     urls = []
     content = BeautifulSoup(resp.raw_response.content, "html.parser")
     for link in content.find_all("a"):
-        if (link.get('href')):
-            urls.append(link.get('href'))
+        href = link.get("href")
+        if not href:
+            continue
+        if href.startswith("mailto:") or href.startswith("javascript:"):
+            continue
+        abs_url = urljoin(resp.raw_response.url, href)
+        abs_url, _frag = urldefrag(abs_url)
+        urls.append(abs_url)
     return urls
 
 def is_valid(url):
@@ -36,8 +42,37 @@ def is_valid(url):
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
     try:
+        if not url:
+            return False
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
+            return False
+        host = parsed.hostname.lower() if parsed.hostname else ""
+        allowed_domains = (
+            "ics.uci.edu",
+            "cs.uci.edu",
+            "informatics.uci.edu",
+            "stat.uci.edu",
+        )
+        if not any(host == d or host.endswith("." + d) for d in allowed_domains):
+            return False
+        if len(url) > 200:
+            return False
+        if parsed.query:
+            params = parse_qs(parsed.query)
+            if len(params) > 5:
+                return False
+            for key, values in params.items():
+                if len(key) > 50:
+                    return False
+                for val in values:
+                    if len(val) > 100:
+                        return False
+            q = parsed.query.lower()
+            if any(k in q for k in ["session", "sid", "phpsessid", "jsessionid"]):
+                return False
+        path_segments = [seg for seg in parsed.path.split("/") if seg]
+        if len(path_segments) >= 4 and len(set(path_segments[-4:])) == 1:
             return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
