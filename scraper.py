@@ -20,7 +20,9 @@ SHINGLE_SIZE = 4
 SIMHASH_BITS = 64
 SIMHASH_BANDS = 8
 SIMHASH_BAND_WIDTH = SIMHASH_BITS // SIMHASH_BANDS
-SIMHASH_MAX_DISTANCE = 7
+SIMHASH_MAX_DISTANCE = 8
+SIMHASH_FALLBACK_RECENT = 512
+SIMHASH_MAX_STORED = 5000
 ALLOWED_DOMAIN_SUFFIXES = (
     "ics.uci.edu",
     "cs.uci.edu",
@@ -68,6 +70,7 @@ CALENDAR_QUERY_KEYS = {
     "day",
 }
 simhash_buckets = {}
+recent_simhash_signatures = []
 
 
 def _exact_content_signature(tokens):
@@ -125,6 +128,10 @@ def _is_near_duplicate(signature):
     for key in _simhash_bucket_keys(signature):
         if key in simhash_buckets:
             candidates.update(simhash_buckets[key])
+    # LSH banding can miss true near matches; compare against a bounded
+    # recent window to improve recall without scanning all history.
+    if not candidates:
+        candidates.update(recent_simhash_signatures[-SIMHASH_FALLBACK_RECENT:])
     for candidate in candidates:
         if _hamming_distance(signature, candidate) <= SIMHASH_MAX_DISTANCE:
             return True
@@ -136,6 +143,9 @@ def _store_signature(signature):
         if key not in simhash_buckets:
             simhash_buckets[key] = set()
         simhash_buckets[key].add(signature)
+    recent_simhash_signatures.append(signature)
+    if len(recent_simhash_signatures) > SIMHASH_MAX_STORED:
+        del recent_simhash_signatures[:len(recent_simhash_signatures) - SIMHASH_MAX_STORED]
 
 
 def _is_query_trap(parsed):
