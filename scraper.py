@@ -16,6 +16,11 @@ MAX_QUERY_PARAMS = 4
 MAX_QUERY_KEY_LEN = 40
 MAX_QUERY_VALUE_LEN = 80
 MAX_LINKS_PER_PAGE = 500
+SHINGLE_SIZE = 4
+SIMHASH_BITS = 64
+SIMHASH_BANDS = 8
+SIMHASH_BAND_WIDTH = SIMHASH_BITS // SIMHASH_BANDS
+SIMHASH_MAX_DISTANCE = 7
 ALLOWED_DOMAIN_SUFFIXES = (
     "ics.uci.edu",
     "cs.uci.edu",
@@ -62,12 +67,75 @@ CALENDAR_QUERY_KEYS = {
     "week",
     "day",
 }
+simhash_buckets = {}
 
 
-def _content_signature(tokens):
-    # Reduce noise from IDs and counters to catch near-duplicate pages.
-    normalized = [re.sub(r"\d+", "0", tok.lower()) for tok in tokens[:500]]
-    return hashlib.sha256(" ".join(normalized).encode("utf-8")).hexdigest()
+def _exact_content_signature(tokens):
+    # Exact similarity fingerprint over normalized token stream.
+    normalized = " ".join(tok.lower() for tok in tokens)
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def _hash64(text):
+    return int.from_bytes(
+        hashlib.blake2b(text.encode("utf-8"), digest_size=8).digest(),
+        byteorder="big",
+        signed=False,
+    )
+
+
+def _token_shingles(tokens, shingle_size=SHINGLE_SIZE):
+    if len(tokens) < shingle_size:
+        return []
+    shingles = []
+    for i in range(len(tokens) - shingle_size + 1):
+        shingles.append(_hash64(" ".join(tokens[i:i + shingle_size])))
+    return shingles
+
+
+def _simhash(feature_hashes):
+    if not feature_hashes:
+        return 0
+    vector = [0] * SIMHASH_BITS
+    for h in feature_hashes:
+        for bit in range(SIMHASH_BITS):
+            if (h >> bit) & 1:
+                vector[bit] += 1
+            else:
+                vector[bit] -= 1
+    signature = 0
+    for bit in range(SIMHASH_BITS):
+        if vector[bit] >= 0:
+            signature |= (1 << bit)
+    return signature
+
+
+def _hamming_distance(a, b):
+    return (a ^ b).bit_count()
+
+
+def _simhash_bucket_keys(signature):
+    mask = (1 << SIMHASH_BAND_WIDTH) - 1
+    for band in range(SIMHASH_BANDS):
+        yield band, (signature >> (band * SIMHASH_BAND_WIDTH)) & mask
+
+
+def _is_near_duplicate(signature):
+    candidates = set()
+    for key in _simhash_bucket_keys(signature):
+        if key in simhash_buckets:
+            candidates.update(simhash_buckets[key])
+    for candidate in candidates:
+        if _hamming_distance(signature, candidate) <= SIMHASH_MAX_DISTANCE:
+            return True
+    return False
+
+
+def _store_signature(signature):
+    for key in _simhash_bucket_keys(signature):
+        if key not in simhash_buckets:
+            simhash_buckets[key] = set()
+        simhash_buckets[key].add(signature)
 
 
 def _is_query_trap(parsed):
@@ -176,10 +244,18 @@ def extract_next_links(url, resp):
     if unique_ratio < MIN_UNIQUE_TOKEN_RATIO:
         return []
 
-    digest = _content_signature(tokens)
+    digest = _exact_content_signature(tokens)
     if digest in seen_content_hashes:
         return []
+    normalized_tokens = [tok.lower() for tok in tokens]
+    shingle_hashes = _token_shingles(normalized_tokens)
+    if not shingle_hashes:
+        shingle_hashes = [_hash64(tok) for tok in set(normalized_tokens)]
+    simhash_signature = _simhash(shingle_hashes)
+    if _is_near_duplicate(simhash_signature):
+        return []
     seen_content_hashes.add(digest)
+    _store_signature(simhash_signature)
     links = content.find_all("a")
     if len(links) > MAX_LINKS_PER_PAGE:
         return []
