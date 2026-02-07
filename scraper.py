@@ -1,6 +1,6 @@
 import hashlib
 import re
-from urllib.parse import urlparse, urljoin, urldefrag, parse_qs
+from urllib.parse import urlparse, urljoin, urldefrag, parse_qsl
 from bs4 import BeautifulSoup
 
 uniquePages = 0
@@ -10,7 +10,130 @@ subdomains = {}
 
 seen_content_hashes = set()
 MIN_TOKENS = 50
+MIN_UNIQUE_TOKEN_RATIO = 0.12
 MAX_BYTES = 5 * 1024 * 1024
+MAX_QUERY_PARAMS = 4
+MAX_QUERY_KEY_LEN = 40
+MAX_QUERY_VALUE_LEN = 80
+MAX_LINKS_PER_PAGE = 500
+ALLOWED_DOMAIN_SUFFIXES = (
+    "ics.uci.edu",
+    "cs.uci.edu",
+    "informatics.uci.edu",
+    "stat.uci.edu",
+)
+DOKUWIKI_TRAP_KEYS = {
+    "do",
+    "idx",
+    "tab_files",
+    "tab_details",
+    "image",
+    "media",
+    "ns",
+}
+TRACKING_QUERY_KEYS = {
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_term",
+    "utm_content",
+    "fbclid",
+    "gclid",
+}
+BLOCKED_HOST_PATH_PREFIXES = {
+    "archive.ics.uci.edu": ("/ml", "/machine-learning-databases"),
+}
+CALENDAR_PATH_HINTS = (
+    "/calendar",
+    "/calendars",
+    "/events",
+    "/event",
+)
+CALENDAR_QUERY_KEYS = {
+    "ical",
+    "outlook-ical",
+    "tribe-bar-date",
+    "eventdisplay",
+    "eventdate",
+    "event_id",
+    "date",
+    "month",
+    "year",
+    "week",
+    "day",
+}
+
+
+def _content_signature(tokens):
+    # Reduce noise from IDs and counters to catch near-duplicate pages.
+    normalized = [re.sub(r"\d+", "0", tok.lower()) for tok in tokens[:500]]
+    return hashlib.sha256(" ".join(normalized).encode("utf-8")).hexdigest()
+
+
+def _is_query_trap(parsed):
+    if not parsed.query:
+        return False
+    query_lower = parsed.query.lower()
+    if any(k in query_lower for k in ["session", "sid", "phpsessid", "jsessionid"]):
+        return True
+
+    params = parse_qsl(parsed.query, keep_blank_values=True)
+    if len(params) > MAX_QUERY_PARAMS:
+        return True
+
+    for key, value in params:
+        key = key.lower()
+        value = value.lower()
+        if len(key) > MAX_QUERY_KEY_LEN or len(value) > MAX_QUERY_VALUE_LEN:
+            return True
+        if key in TRACKING_QUERY_KEYS:
+            return True
+        if key in {"replytocom", "sort", "filter", "order", "share", "ical"}:
+            return True
+        if key == "do" and value in {
+            "",
+            "login",
+            "edit",
+            "index",
+            "recent",
+            "revisions",
+            "backlink",
+            "media",
+            "export_code",
+        }:
+            return True
+
+    # DokuWiki query combinations produce large low-value URL families.
+    path = parsed.path.lower()
+    if "doku.php" in path and any(k.lower() in DOKUWIKI_TRAP_KEYS for k, _ in params):
+        return True
+
+    return False
+
+
+def _is_blocked_ml_dataset_url(host, path):
+    prefixes = BLOCKED_HOST_PATH_PREFIXES.get(host, ())
+    return any(path.startswith(prefix) for prefix in prefixes)
+
+
+def _is_calendar_trap(parsed):
+    path = (parsed.path or "/").lower()
+    # Date-like terminal paths are often infinite calendar navigations.
+    if re.search(r"/\d{4}[-/]\d{2}[-/]\d{2}/?$", path):
+        return True
+    if re.search(r"/\d{4}/\d{2}/\d{2}/?$", path):
+        return True
+    if re.search(r"/events?/(week|day|month)/?$", path):
+        return True
+    if re.search(r"(events?[-_/]?week|events?[-_/]?month|events?[-_/]?day)/?$", path):
+        return True
+
+    if any(hint in path for hint in CALENDAR_PATH_HINTS):
+        params = parse_qsl(parsed.query, keep_blank_values=True)
+        if any(k.lower() in CALENDAR_QUERY_KEYS for k, _ in params):
+            return True
+
+    return False
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -43,18 +166,24 @@ def extract_next_links(url, resp):
         return []
 
     urls = []
+    seen_urls = set()
     content = BeautifulSoup(content_bytes, "html.parser")
     text = content.get_text(" ", strip=True)
     tokens = re.findall(r"[A-Za-z0-9]+", text)
     if len(tokens) < MIN_TOKENS:
         return []
+    unique_ratio = len(set(tokens)) / float(len(tokens))
+    if unique_ratio < MIN_UNIQUE_TOKEN_RATIO:
+        return []
 
-    normalized = " ".join(tokens).lower()
-    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    digest = _content_signature(tokens)
     if digest in seen_content_hashes:
         return []
     seen_content_hashes.add(digest)
-    for link in content.find_all("a"):
+    links = content.find_all("a")
+    if len(links) > MAX_LINKS_PER_PAGE:
+        return []
+    for link in links:
         href = link.get("href")
         if not href:
             continue
@@ -62,6 +191,9 @@ def extract_next_links(url, resp):
             continue
         abs_url = urljoin(resp.raw_response.url, href)
         abs_url, _frag = urldefrag(abs_url)
+        if abs_url in seen_urls:
+            continue
+        seen_urls.add(abs_url)
         urls.append(abs_url)
     return urls
 
@@ -75,41 +207,37 @@ def is_valid(url):
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
-        host = parsed.hostname.lower() if parsed.hostname else ""
-        allowed_domains = (
-            "ics.uci.edu",
-            "cs.uci.edu",
-            "informatics.uci.edu",
-            "stat.uci.edu",
-        )
-        if not any(host == d or host.endswith("." + d) for d in allowed_domains):
+        host = parsed.hostname.lower().strip(".") if parsed.hostname else ""
+        path = parsed.path or "/"
+        # Assignment scope: *.ics.uci.edu/*, *.cs.uci.edu/*,
+        # *.informatics.uci.edu/*, *.stat.uci.edu/*
+        if not any(host == d or host.endswith("." + d) for d in ALLOWED_DOMAIN_SUFFIXES):
+            return False
+        if not path.startswith("/"):
+            return False
+        # Assignment warning: do not crawl UCI ML repository/datasets.
+        if _is_blocked_ml_dataset_url(host, path.lower()):
+            return False
+        # Assignment warning: avoid calendar/event-week traps.
+        if _is_calendar_trap(parsed):
             return False
         if len(url) > 200:
             return False
-        if parsed.query:
-            params = parse_qs(parsed.query)
-            if len(params) > 5:
-                return False
-            for key, values in params.items():
-                if len(key) > 50:
-                    return False
-                for val in values:
-                    if len(val) > 100:
-                        return False
-            q = parsed.query.lower()
-            if any(k in q for k in ["session", "sid", "phpsessid", "jsessionid"]):
-                return False
+        if _is_query_trap(parsed):
+            return False
+        if any(k in path for k in ["/login", "/logout", "/signin", "/signup"]):
+            return False
         path_segments = [seg for seg in parsed.path.split("/") if seg]
         if len(path_segments) >= 4 and len(set(path_segments[-4:])) == 1:
             return False
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
-            + r"|png|tiff?|mid|mp2|mp3|mp4"
+            + r"|png|svg|webp|tiff?|mid|mp2|mp3|mp4|webm"
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
             + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
-            + r"|thmx|mso|arff|rtf|jar|csv"
+            + r"|thmx|mso|arff|rtf|jar|csv|ttf|otf|eot|woff2?"
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
 
     except TypeError:

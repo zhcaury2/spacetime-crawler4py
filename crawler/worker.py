@@ -1,4 +1,5 @@
-from threading import Thread
+from threading import Thread, Lock
+from urllib.parse import urlparse
 
 from inspect import getsource
 from utils.download import download
@@ -8,6 +9,9 @@ import time
 
 
 class Worker(Thread):
+    _politeness_lock = Lock()
+    _last_access_by_domain = {}
+
     def __init__(self, worker_id, config, frontier):
         self.logger = get_logger(f"Worker-{worker_id}", "Worker")
         self.config = config
@@ -16,6 +20,22 @@ class Worker(Thread):
         assert {getsource(scraper).find(req) for req in {"from requests import", "import requests"}} == {-1}, "Do not use requests in scraper.py"
         assert {getsource(scraper).find(req) for req in {"from urllib.request import", "import urllib.request"}} == {-1}, "Do not use urllib.request in scraper.py"
         super().__init__(daemon=True)
+
+    def _wait_for_domain_politeness(self, url):
+        domain = (urlparse(url).hostname or "").lower()
+        if not domain:
+            return
+        while True:
+            wait_time = 0.0
+            with Worker._politeness_lock:
+                now = time.time()
+                last = Worker._last_access_by_domain.get(domain, 0.0)
+                elapsed = now - last
+                if elapsed >= self.config.time_delay:
+                    Worker._last_access_by_domain[domain] = now
+                    return
+                wait_time = self.config.time_delay - elapsed
+            time.sleep(wait_time)
         
     def run(self):
         while True:
@@ -23,6 +43,7 @@ class Worker(Thread):
             if not tbd_url:
                 self.logger.info("Frontier is empty. Stopping Crawler.")
                 break
+            self._wait_for_domain_politeness(tbd_url)
             resp = download(tbd_url, self.config, self.logger)
             self.logger.info(
                 f"Downloaded {tbd_url}, status <{resp.status}>, "
@@ -31,4 +52,3 @@ class Worker(Thread):
             for scraped_url in scraped_urls:
                 self.frontier.add_url(scraped_url)
             self.frontier.mark_url_complete(tbd_url)
-            time.sleep(self.config.time_delay)
