@@ -1,3 +1,4 @@
+import hashlib
 import re
 from urllib.parse import urlparse, urljoin, urldefrag, parse_qs
 from bs4 import BeautifulSoup
@@ -6,6 +7,10 @@ uniquePages = 0
 longestPage = 0
 commonWords = {}
 subdomains = {}
+
+seen_content_hashes = set()
+MIN_TOKENS = 50
+MAX_BYTES = 5 * 1024 * 1024
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -24,8 +29,31 @@ def extract_next_links(url, resp):
     if resp.status != 200 or not resp.raw_response or not resp.raw_response.content:
         return []
 
+    headers = getattr(resp.raw_response, "headers", {}) or {}
+    content_length = headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > MAX_BYTES:
+                return []
+        except ValueError:
+            pass
+
+    content_bytes = resp.raw_response.content
+    if len(content_bytes) > MAX_BYTES:
+        return []
+
     urls = []
-    content = BeautifulSoup(resp.raw_response.content, "html.parser")
+    content = BeautifulSoup(content_bytes, "html.parser")
+    text = content.get_text(" ", strip=True)
+    tokens = re.findall(r"[A-Za-z0-9]+", text)
+    if len(tokens) < MIN_TOKENS:
+        return []
+
+    normalized = " ".join(tokens).lower()
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    if digest in seen_content_hashes:
+        return []
+    seen_content_hashes.add(digest)
     for link in content.find_all("a"):
         href = link.get("href")
         if not href:
