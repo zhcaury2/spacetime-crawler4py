@@ -1,0 +1,129 @@
+Unique pages: 14560
+
+Longest page:
+URL: https://ics.uci.edu/~kay/wordlist.txt
+Word count: 475850
+
+Top 50 words (excluding stop words):
+1. project: 27718
+2. time: 23505
+3. data: 23325
+4. one: 20597
+5. ics: 20475
+6. http: 19616
+7. use: 19215
+8. years: 19159
+9. added: 17023
+10. ago: 16865
+11. uci: 16587
+12. information: 16325
+13. may: 16220
+14. file: 15279
+15. using: 14828
+16. search: 14663
+17. students: 14323
+18. new: 14043
+19. kb: 13730
+20. two: 13553
+21. version: 13423
+22. com: 13300
+23. resource: 13093
+24. research: 12955
+25. first: 12885
+26. name: 12673
+27. code: 12324
+28. example: 12205
+29. course: 12171
+30. page: 12000
+31. also: 11955
+32. qe: 11709
+33. point: 11689
+34. ramesh: 11678
+35. set: 11664
+36. us: 11430
+37. list: 11404
+38. computer: 11224
+39. class: 11056
+40. must: 11026
+41. make: 11022
+42. projects: 10678
+43. pdf: 10673
+44. edu: 10226
+45. size: 10164
+46. number: 10069
+47. web: 10062
+48. need: 9970
+49. server: 9953
+50. software: 9837
+
+Subdomains (alphabetical):
+accessibility.ics.uci.edu, 6
+acoi.ics.uci.edu, 28
+alderis.ics.uci.edu, 23
+archive-beta.ics.uci.edu, 7
+archive.ics.uci.edu, 190
+asterix.ics.uci.edu, 10
+cert.ics.uci.edu, 18
+checkin.ics.uci.edu, 2
+chenli.ics.uci.edu, 2
+cloudberry.ics.uci.edu, 39
+code.ics.uci.edu, 14
+containers.ics.uci.edu, 1
+courselisting.ics.uci.edu, 1
+cradl.ics.uci.edu, 18
+cs.ics.uci.edu, 3
+cwicsocal18.ics.uci.edu, 10
+duttgroup.ics.uci.edu, 120
+dynamo.ics.uci.edu, 1
+edgelab.ics.uci.edu, 7
+evoke.ics.uci.edu, 2
+flamingo.ics.uci.edu, 560
+fr.ics.uci.edu, 3
+gitlab.ics.uci.edu, 1
+gradinfo.ics.uci.edu, 1
+grape.ics.uci.edu, 1986
+graphics.ics.uci.edu, 1
+hai.ics.uci.edu, 6
+helpdesk.ics.uci.edu, 4
+hobbes.ics.uci.edu, 11
+hub.ics.uci.edu, 3
+i-sensorium.ics.uci.edu, 5
+iasl.ics.uci.edu, 1
+ics.uci.edu, 7305
+insite.ics.uci.edu, 9
+intranet.ics.uci.edu, 1
+ipubmed.ics.uci.edu, 1
+isg.ics.uci.edu, 189
+jgarcia.ics.uci.edu, 40
+julia-hub.ics.uci.edu, 1
+luci.ics.uci.edu, 4
+mailman.ics.uci.edu, 38
+malek.ics.uci.edu, 1
+mover.ics.uci.edu, 23
+myip.ics.uci.edu, 1
+nalini.ics.uci.edu, 7
+netreg.ics.uci.edu, 1
+ngs.ics.uci.edu, 2542
+observium.ics.uci.edu, 1
+onboarding.ics.uci.edu, 1
+password.ics.uci.edu, 1
+pgadmin.ics.uci.edu, 1
+scale.ics.uci.edu, 7
+seal.ics.uci.edu, 46
+sherlock.ics.uci.edu, 7
+speedtest.ics.uci.edu, 1
+staging-hub.ics.uci.edu, 1
+stat.ics.uci.edu, 3
+studentcouncil.ics.uci.edu, 7
+summeracademy.ics.uci.edu, 6
+support.ics.uci.edu, 4
+svn.ics.uci.edu, 1
+tastier.ics.uci.edu, 1
+unite.ics.uci.edu, 10
+vision.ics.uci.edu, 220
+wics.ics.uci.edu, 608
+wiki.ics.uci.edu, 213
+www-db.ics.uci.edu, 2
+www.informatics.uci.edu, 163
+www.stat.uci.edu, 3
+xtune.ics.uci.edu, 6
